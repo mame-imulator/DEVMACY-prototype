@@ -1,0 +1,14 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# PHP/Web logs
+*.log
+error_log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.bak

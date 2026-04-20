@@ -125,7 +125,9 @@
 
     <div id="diagSection" style="display: none;">
         <div class="diagnostic-box">
-            <textarea id="aiPrompt" placeholder="Ask Gemini: 'Patient has a sharp headache and fever...'"></textarea>
+            <textarea id="aiPrompt" 
+                      placeholder="Ask Gemini: 'Patient has a sharp headache and fever...'"
+                      onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); runDiagnostic(); }"></textarea>
             <button onclick="runDiagnostic()" style="width:100%; padding:10px; border-radius:8px; background:var(--primary-color); color:white; border:none; font-weight:700; cursor:pointer;">
                 <i class="ph ph-magic-wand"></i> Ask Gemini
             </button>
@@ -185,22 +187,31 @@ async function runDiagnostic() {
 
     // 1. Identify Symptoms from Prompt
     let foundSymptomIds = [];
+    let detectedNames = [];
     symptomMaster.forEach(s => {
         if (prompt.includes(s.symptom_name.toLowerCase())) {
             foundSymptomIds.push(s.symptom_id);
+            detectedNames.push(s.symptom_name);
         }
     });
 
-    // Simple word stem matching for richer detection
-    const words = prompt.split(/\s+/);
-    if(foundSymptomIds.length === 0) {
-        // Mock some "smarts"
-        if(prompt.includes("pain")) foundSymptomIds.push(1, 2); // Map 'pain' to common ache symptoms if found
+    // Semantic Mapping (Mapping common words to DB keywords)
+    if (prompt.includes("hot") || prompt.includes("temp")) { 
+        const s = symptomMaster.find(sm => sm.symptom_name === 'Fever');
+        if(s && !foundSymptomIds.includes(s.symptom_id)) foundSymptomIds.push(s.symptom_id);
+    }
+    if (prompt.includes("hurt") || prompt.includes("ache")) {
+        const s = symptomMaster.find(sm => sm.symptom_name === 'Pain Relief');
+        if(s && !foundSymptomIds.includes(s.symptom_id)) foundSymptomIds.push(s.symptom_id);
     }
 
     setTimeout(async () => {
         if (foundSymptomIds.length === 0) {
-            results.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted)">I couldn't identify specific symptoms in your description. Try using clinical terms like 'Cough', 'Fever', or 'Ache'.</div>`;
+            results.innerHTML = `
+                <div style="padding:20px; text-align:center;">
+                    <p style="color:var(--text-muted); margin-bottom:12px;">I couldn't identify specific symptoms in your description.</p>
+                    <p style="font-size:12px; color:rgba(255,255,255,0.4)">Try these keywords: <b>${symptomMaster.slice(0,5).map(sm => sm.symptom_name).join(', ')}</b></p>
+                </div>`;
             status.innerText = "Clinical AI Standing By";
             return;
         }

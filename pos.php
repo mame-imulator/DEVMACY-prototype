@@ -70,7 +70,10 @@ if (isset($pdo)) {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h3 style="margin:0;">Active Sale</h3>
                 
-                <div style="display: flex; align-items: center; gap: 24px;">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <button onclick="toggleAIAssistant()" style="display: flex; align-items: center; gap: 8px; background: rgba(99, 102, 241, 0.1); border: 1px solid var(--primary-color); color: var(--primary-color); padding: 10px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.3s; font-size: 13px;">
+                        <i class="ph ph-sparkle"></i> Gemini Insights
+                    </button>
                     <div style="text-align: right;">
                         <div style="font-size: 11px; color:var(--text-muted); text-transform:uppercase;">Grand Total</div>
                         <div id="totalText" style="font-size: 28px; font-weight: 800; color: var(--secondary-color);">$0.00</div>
@@ -279,4 +282,5 @@ async function submitSale() {
 }
 </script>
 
+<?php include 'includes/pos_assistant.php'; ?>
 <?php include 'includes/footer.php'; ?>

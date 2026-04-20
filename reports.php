@@ -23,6 +23,9 @@ if (file_exists('xcrud/xcrud.php')) {
         $xcrud->label('refund_amount', 'Refund ($)');
         $xcrud->label('created_at', 'Date Returned');
         
+        $xcrud->sum('refund_amount', 'Total Refund: {value}');
+        $xcrud->count('Medicine', 'Total Returns: {value}');
+        
         $xcrud->unset_add();
         $xcrud->unset_edit();
         $xcrud->unset_remove();
@@ -39,6 +42,9 @@ if (file_exists('xcrud/xcrud.php')) {
         $xcrud->label('quantity', 'Qty');
         $xcrud->label('created_at', 'Date Processed');
         
+        $xcrud->sum('quantity', 'Total Items: {value}');
+        $xcrud->count('Medicine', 'Total Record: {value}');
+        
         $xcrud->unset_add();
         $xcrud->unset_edit();
         $xcrud->unset_remove();
@@ -54,6 +60,10 @@ if (file_exists('xcrud/xcrud.php')) {
         
         $xcrud->columns('sale_id, sale_date, Items Sold, Total ($), status');
         $xcrud->label('sale_id', 'Order #');
+        $xcrud->count('sale_id', 'Total Orders: {value}');
+        // Note: xCRUD sum() on subselects can be complex depending on version, 
+        // if it doesn't show, we'd need a real column in the DB.
+        
         $xcrud->change_type('sale_date', 'date', '', array('format' => 'd/m/Y'));
         
         // Highlight Returned orders

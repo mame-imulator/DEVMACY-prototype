@@ -23,6 +23,7 @@ try {
             p.product_name,
             s.size_description,
             pup.price_per_unit,
+            pup.barcode,
             SUM(st.quantity) as total_stock,
             MIN(st.expiry_date) as earliest_expiry
         FROM Product p

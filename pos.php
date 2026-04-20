@@ -53,6 +53,7 @@ if (isset($pdo)) {
                 <label style="display:block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">SEARCH DRUG</label>
                 <input type="text" id="productSearch" placeholder="Scan or Type..." 
                        onkeyup="searchProducts(this.value)"
+                       onkeydown="if(event.key === 'Enter') handleEnterSearch()"
                        autocomplete="off"
                        style="width: 100%; padding: 14px; border-radius: var(--radius-sm); border: 2px solid var(--border-color); background: var(--bg-color); color: white; font-size: 16px;">
                 <div id="searchResults"></div>
@@ -136,6 +137,13 @@ async function searchProducts(query) {
 
     } catch (e) {
         console.error("Search failed:", e);
+    }
+}
+
+// Handle Enter key for search
+function handleEnterSearch() {
+    if (currentSearchResults.length > 0) {
+        addToCartByIndex(0);
     }
 }
 

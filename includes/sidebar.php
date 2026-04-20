@@ -64,6 +64,12 @@
             </a>
         </li>
         <li>
+            <a href="promotions.php">
+                <i class="ph ph-tag"></i>
+                Promotions
+            </a>
+        </li>
+        <li>
             <a href="suppliers.php">
                 <i class="ph ph-truck"></i>
                 Suppliers

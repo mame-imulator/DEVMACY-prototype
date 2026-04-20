@@ -116,12 +116,23 @@ async function searchProducts(query) {
 
         let html = '';
         currentSearchResults.forEach((p, index) => {
+            const priceHtml = p.has_promo 
+                ? `<span style="text-decoration: line-through; color: var(--text-muted); margin-right: 8px;">$${p.original_price.toFixed(2)}</span>
+                   <span style="color: var(--secondary-color); font-weight: 800;">$${p.price_per_unit.toFixed(2)}</span>`
+                : `<span style="color: var(--secondary-color); font-weight: 700;">$${p.price_per_unit.toFixed(2)}</span>`;
+            
+            const badgeHtml = p.has_promo 
+                ? `<span style="background: var(--accent-color); color: white; font-size: 10px; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; font-weight: 800; margin-left: 8px;">SALE: ${p.promo_name}</span>` 
+                : '';
+
             html += `
             <div class="search-item" onclick="addToCartByIndex(${index})" style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
-                <div style="font-weight: 700; color: white;">${p.product_name}</div>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="font-weight: 700; color: white;">${p.product_name} ${badgeHtml}</div>
+                </div>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 4px;">
                     <span>${p.size_description}</span>
-                    <span style="color: var(--secondary-color); font-weight: 700;">$${parseFloat(p.price_per_unit).toFixed(2)}</span>
+                    <div>${priceHtml}</div>
                 </div>
             </div>`;
         });
@@ -167,6 +178,8 @@ function addToCart(product) {
             name: product.product_name,
             size: product.size_description,
             price: parseFloat(product.price_per_unit),
+            originalPrice: parseFloat(product.original_price),
+            hasPromo: product.has_promo,
             quantity: 1
         });
     }
@@ -208,7 +221,9 @@ function renderCart() {
             <div style="flex: 1;">
                 <h4 style="margin:0; font-size: 16px;">${item.name}</h4>
                 <div style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
-                    ${item.size} @ $${item.price.toFixed(2)}
+                    ${item.size} @ 
+                    ${item.hasPromo ? `<span style="text-decoration: line-through; opacity: 0.6; margin-right: 4px;">$${item.originalPrice.toFixed(2)}</span>` : ''}
+                    $${item.price.toFixed(2)}
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 16px;">

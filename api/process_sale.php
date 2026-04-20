@@ -31,8 +31,16 @@ try {
         $barcode = $item['barcode'];
         $qty_to_sell = (int)$item['quantity'];
 
-        // 2. Fetch Product & Unit Details from Barcode
-        $stmt = $pdo->prepare("SELECT product_id, unit_size_id, price_per_unit FROM Product_Unit_Price WHERE barcode = ?");
+        // 2. Fetch Product & Unit Details from Barcode + check for active Promotion
+        $stmt = $pdo->prepare("SELECT pup.product_id, pup.unit_size_id, pup.price_per_unit, 
+                                      pr.discount_type, pr.discount_value
+                               FROM Product_Unit_Price pup
+                               LEFT JOIN Promotion pr ON pup.barcode = pr.barcode 
+                                    AND pr.is_active = 1 
+                                    AND CURDATE() BETWEEN pr.start_date AND pr.end_date
+                               WHERE pup.barcode = ?
+                               ORDER BY pr.discount_value DESC
+                               LIMIT 1"); // Take the best promotion
         $stmt->execute([$barcode]);
         $details = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -42,7 +50,18 @@ try {
 
         $product_id = $details['product_id'];
         $unit_size_id = $details['unit_size_id'];
-        $unit_price = $details['price_per_unit'];
+        $base_price = (float)$details['price_per_unit'];
+        $unit_price = $base_price;
+
+        // Apply Promotion if active
+        if ($details['discount_type']) {
+            if ($details['discount_type'] === 'Percentage') {
+                $unit_price = $base_price * (1 - ($details['discount_value'] / 100));
+            } else {
+                $unit_price = max(0, $base_price - $details['discount_value']);
+            }
+            $unit_price = round($unit_price, 2);
+        }
 
         // 3. FIFO Stock Deduction (Closest to Expiry First)
         // Fetch all stock batches for this product/unit, ordered by expiry date

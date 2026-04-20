@@ -44,19 +44,20 @@ if (file_exists('xcrud/xcrud.php')) {
         $xcrud->unset_remove();
 
     } else {
-        // DEFAULT: Sales History
+        // DEFAULT: Order History
         $xcrud->table('Sale');
-        $xcrud->table_name('Sales History & Cancellations');
+        $xcrud->table_name('Order History');
         
         // Separate Subselects for better readability
         $xcrud->subselect('Items Sold', 'SELECT GROUP_CONCAT(CONCAT(p.product_name, " x ", si.units_sold) SEPARATOR ", ") FROM Sale_Item si JOIN Product p ON si.product_id = p.product_id WHERE si.sale_id = {sale_id}');
-        $xcrud->subselect('Total ($)', 'SELECT SUM(si.units_sold * si.unit_price) FROM Sale_Item si WHERE si.sale_id = {sale_id}');
+        $xcrud->subselect('Total ($)', 'SELECT SUM(si.unit_price * si.units_sold) FROM Sale_Item si WHERE si.sale_id = {sale_id}');
         
         $xcrud->columns('sale_id, sale_date, Items Sold, Total ($), status');
         $xcrud->label('sale_id', 'Order #');
         $xcrud->change_type('sale_date', 'date', '', array('format' => 'd/m/Y'));
         
-        $xcrud->highlight('status', '=', 'Cancelled', 'rgba(244, 63, 94, 0.1)');
+        // Highlight Returned orders
+        $xcrud->highlight('status', '=', 'Returned', 'rgba(245, 158, 11, 0.1)');
         
         // Nested items view
         $items = $xcrud->nested_table('Order Details','sale_id','Sale_Item','sale_id');
@@ -64,14 +65,14 @@ if (file_exists('xcrud/xcrud.php')) {
         $items->relation('product_id','Product','product_id','product_name');
         $items->relation('unit_size_id','Unit_Size','unit_size_id','size_description');
         
-        if (($_SESSION['role_name'] ?? '') === 'Admin') {
+        if (($_SESSION['role_name'] ?? '') === 'Admin' || ($_SESSION['role_name'] ?? '') === 'Pharmacist') {
             $items->button('#', 'Refund Item', 'ph ph-arrow-u-up-left', '', array(
                 'onclick' => 'refundItem({sale_item_id}, {units_sold})',
                 'style' => 'color: var(--secondary-color);'
             ));
             
-            $xcrud->button('#', 'Cancel Order', 'ph ph-x-circle', '', array(
-                'onclick' => 'cancelOrder({sale_id})',
+            $xcrud->button('#', 'Return Full Order', 'ph ph-arrow-counter-clockwise', '', array(
+                'onclick' => 'returnFullOrder({sale_id})',
                 'style' => 'color: var(--accent-color);'
             ));
         }
@@ -181,27 +182,30 @@ async function refundItem(itemId, maxQty) {
     }
 }
 
-async function cancelOrder(saleId) {
-    if (!confirm(`Are you absolutely sure you want to cancel Order #${saleId}? This will return all items to stock.`)) {
+async function returnFullOrder(saleId) {
+    if (!confirm(`Are you sure you want to RETURN Order #${saleId}? This will log all items as returns and restore stock.`)) {
         return;
     }
+
+    const reason = prompt("Reason for returning this order:", "Full Order Return");
+    if (reason === null) return;
 
     try {
         const response = await fetch('api/cancel_order.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sale_id: saleId })
+            body: JSON.stringify({ sale_id: saleId, reason: reason })
         });
         
         const result = await response.json();
         if (result.success) {
             alert('Success: ' + result.message);
-            location.reload(); // Refresh XCRUD
+            location.reload();
         } else {
             alert('Error: ' + result.message);
         }
     } catch (e) {
-        alert('Failed to connect to cancellation API.');
+        alert('Failed to connect to returns API.');
     }
 }
 </script>

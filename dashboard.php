@@ -20,10 +20,35 @@ if (isset($pdo) && $pdo) {
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
         if($res) $today_txns = $res['cnt'];
 
-        // Low Stock count
-        $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM Stock WHERE quantity < 10");
+        // Low Stock Detailed (Criteria: < 10)
+        $low_stock_stmt = $pdo->query("
+            SELECT p.product_name, s.quantity, us.size_description 
+            FROM Stock s 
+            JOIN Product p ON s.product_id = p.product_id 
+            JOIN Unit_Size us ON s.unit_size_id = us.unit_size_id 
+            WHERE s.quantity < 10 
+            ORDER BY s.quantity ASC 
+            LIMIT 5
+        ");
+        $low_stock_items = $low_stock_stmt->fetchAll(PDO::FETCH_ASSOC);
+        $low_stock = count($low_stock_items); // or get total count for the badge
+
+        // Recent Activity (Returns with Order IDs)
+        $returns_stmt = $pdo->query("
+            SELECT cr.created_at, p.product_name, s.sale_id, cr.quantity
+            FROM Customer_Return cr
+            JOIN Sale_Item si ON cr.sale_item_id = si.sale_item_id
+            JOIN Sale s ON si.sale_id = s.sale_id
+            JOIN Product p ON si.product_id = p.product_id
+            ORDER BY cr.created_at DESC
+            LIMIT 5
+        ");
+        $recent_returns_detailed = $returns_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Transactions count
+        $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM Sale WHERE sale_date = CURDATE()");
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
-        if($res) $low_stock = $res['cnt'];
+        if($res) $today_txns = $res['cnt'];
 
         // 7-Day Sales Trend
         $trend_stmt = $pdo->query("
@@ -99,7 +124,7 @@ if (isset($pdo) && $pdo) {
     ?>
 
     <!-- Metrics Row -->
-    <div class="metrics-grid" style="margin-bottom: 32px;">
+    <div class="metrics-grid" style="margin-bottom: 32px; grid-template-columns: repeat(3, 1fr);">
         <div class="metric-card glass-panel">
             <div class="metric-icon"><i class="ph ph-receipt"></i></div>
             <div>
@@ -123,12 +148,35 @@ if (isset($pdo) && $pdo) {
                 <h3 style="font-size: 24px;"><?= $today_txns ?></h3>
             </div>
         </div>
-        
-        <div class="metric-card glass-panel danger">
-            <div class="metric-icon"><i class="ph ph-warning"></i></div>
-            <div>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 4px;">Low Stock Alerts</p>
-                <h3 style="font-size: 24px;"><?= $low_stock ?> Items</h3>
+    </div>
+
+    <!-- Integrated Alerts Section -->
+    <div style="margin-bottom: 32px;">
+        <!-- Low Stock Items List (Wide) -->
+        <div class="glass-panel" style="padding: 24px; border-left: 4px solid var(--accent-color);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+                <div>
+                    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 4px;">Low Stock (Criteria: < 10 units)</p>
+                    <h3 style="font-size: 24px; color: white;"><?= $low_stock ?> Items</h3>
+                </div>
+                <a href="inventory.php" class="btn btn-sm" style="padding: 10px 20px; font-size: 13px; background: rgba(244, 63, 94, 0.1); color: var(--accent-color); border: 2px solid var(--accent-color); border-radius: 10px; text-decoration: none; font-weight: 800; transition: all 0.2s;">
+                    Manage Inventory
+                </a>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+                <?php if(empty($low_stock_items)): ?>
+                    <p style="color: var(--text-muted); font-size: 14px; grid-column: 1/-1; padding: 20px; text-align: center;">All stock levels are optimal.</p>
+                <?php else: ?>
+                    <?php foreach($low_stock_items as $item): ?>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px; background: rgba(244, 63, 94, 0.05); border-radius: 12px; border: 1px solid rgba(244, 63, 94, 0.1);">
+                            <span style="font-size: 15px; font-weight: 600;"><?= htmlspecialchars($item['product_name']) ?></span>
+                            <span style="background: var(--accent-color); color: white; padding: 4px 10px; border-radius: 8px; font-size: 13px; font-weight: 800; box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);">
+                                <?= $item['quantity'] ?> units
+                            </span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>

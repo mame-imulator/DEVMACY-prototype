@@ -52,6 +52,7 @@ CREATE TABLE Stock (
     product_id INT NOT NULL,
     unit_size_id INT NOT NULL,
     quantity INT NOT NULL CHECK (quantity >= 0),
+    location ENUM('Front', 'Back') NOT NULL DEFAULT 'Back',
     expiry_date DATE NOT NULL,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
                  ON UPDATE CURRENT_TIMESTAMP,

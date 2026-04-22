@@ -18,9 +18,11 @@ if (strlen($q) < 1) {
 
 try {
     // Search by barcode, product name, OR product_id
-    // Now with Promotion support
+    // Now with Multi-Inventory support (Front vs Back)
     $stmt = $pdo->prepare("SELECT pup.barcode, p.product_name, us.size_description, pup.price_per_unit,
-                                  pr.discount_type, pr.discount_value, pr.promo_name
+                                  pr.discount_type, pr.discount_value, pr.promo_name,
+                                  (SELECT SUM(quantity) FROM Stock WHERE product_id = p.product_id AND unit_size_id = us.unit_size_id AND location = 'Front') as front_qty,
+                                  (SELECT SUM(quantity) FROM Stock WHERE product_id = p.product_id AND unit_size_id = us.unit_size_id AND location = 'Back') as back_qty
                             FROM Product_Unit_Price pup
                             JOIN Product p ON pup.product_id = p.product_id
                             JOIN Unit_Size us ON pup.unit_size_id = us.unit_size_id
@@ -63,7 +65,9 @@ try {
             'original_price' => $original_price,
             'price_per_unit' => round($promo_price, 2),
             'has_promo' => $has_promo,
-            'promo_name' => $row['promo_name']
+            'promo_name' => $row['promo_name'],
+            'front_qty' => (int)($row['front_qty'] ?? 0),
+            'back_qty' => (int)($row['back_qty'] ?? 0)
         ];
     }
 

@@ -3,12 +3,6 @@
 $page_title = 'Dashboard';
 include 'includes/header.php';
 
-// One-time self-healing migration for multi-inventory
-if (!isset($_SESSION['inventory_migrated'])) {
-    include 'api/migrate_multi_inventory.php';
-    $_SESSION['inventory_migrated'] = true;
-}
-
 $today_sales = 0.00;
 $today_txns = 0;
 $low_stock = 0;

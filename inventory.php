@@ -28,6 +28,11 @@ if (isset($pdo) && $pdo) {
 if (file_exists('xcrud/xcrud.php')) {
     require ('xcrud/xcrud.php');
     $xcrud = Xcrud::get_instance();
+    $xcrud->table('Stock');
+    $xcrud->table_name('Current Inventory Batches');
+    $xcrud->relation('product_id','Product','product_id','product_name');
+    $xcrud->relation('unit_size_id','Unit_Size','unit_size_id','size_description');
+    
     $xcrud->columns('product_id, unit_size_id, quantity, location, expiry_date');
     $xcrud->label('product_id', 'Medicine');
     $xcrud->label('unit_size_id', 'Unit');

@@ -211,3 +211,10 @@ INSERT INTO Stock_Movement (stock_id, user_id, type, quantity_change, balance_af
 (@stock1, 1, 'Purchase', 50, 50, 'Initial Opening Balance'),
 (@stock2, 1, 'Purchase', 100, 100, 'Initial Opening Balance');
 
+-- ==========================================
+-- MIGRATIONS / UPDATES
+-- ==========================================
+-- To add Multi-Inventory support to an existing database, run:
+-- ALTER TABLE Stock ADD COLUMN location ENUM('Front', 'Back') NOT NULL DEFAULT 'Back';
+-- UPDATE Stock SET location = 'Back';
+

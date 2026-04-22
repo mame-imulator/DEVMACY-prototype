@@ -7,13 +7,16 @@ if (!$pdo) {
 }
 
 try {
-    // 1. Add location column if it doesn't exist
-    $pdo->exec("ALTER TABLE Stock ADD COLUMN IF NOT EXISTS location ENUM('Front', 'Back') NOT NULL DEFAULT 'Back'");
+    // 1. Manually check if location column exists
+    $check = $pdo->query("SHOW COLUMNS FROM Stock LIKE 'location'")->fetch();
     
-    // 2. Ensure all existing stock is set to 'Back' as per user request
-    $pdo->exec("UPDATE Stock SET location = 'Back'");
+    if (!$check) {
+        $pdo->exec("ALTER TABLE Stock ADD COLUMN location ENUM('Front', 'Back') NOT NULL DEFAULT 'Back'");
+        // Only update to 'Back' if we just added the column
+        $pdo->exec("UPDATE Stock SET location = 'Back'");
+    }
     
-    echo json_encode(['success' => true, 'message' => 'Inventory migration completed successfully. All stock moved to Back Storeroom.']);
+    echo json_encode(['success' => true, 'message' => 'Inventory migration check completed.']);
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'message' => 'Migration failed: ' . $e->getMessage()]);
 }

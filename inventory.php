@@ -321,6 +321,9 @@ async function returnToSupplier(stockId, currentQty) {
         }
     } catch (e) {
         alert('Failed to connect to return API.');
+    }
+}
+
 async function performAdjustment(stockId, newQty, reason) {
     try {
         const response = await fetch('api/adjust_stock.php', {

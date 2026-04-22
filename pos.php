@@ -109,7 +109,8 @@ async function searchProducts(query) {
     }
 
     try {
-        const response = await fetch(`api/search_products.php?q=${encodeURIComponent(query)}`);
+        const timestamp = new Date().getTime();
+        const response = await fetch(`api/search_products.php?q=${encodeURIComponent(query)}&_t=${timestamp}`);
         currentSearchResults = await response.json();
         
         if (currentSearchResults.length === 0) {

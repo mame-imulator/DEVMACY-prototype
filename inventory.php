@@ -210,26 +210,43 @@ if (file_exists('xcrud/xcrud.php')) {
 
 <script>
 async function openIntakeModal() {
-    // Fetch Products & Units for dropdowns
     try {
-        const [prodRes, unitRes] = await Promise.all([
-            fetch('api/get_metadata.php?type=product_list'), 
-            fetch('api/get_metadata.php?type=unit_size')
-        ]);
-        
+        const prodRes = await fetch('api/get_metadata.php?type=product_list');
         const products = await prodRes.json();
-        const units = await unitRes.json();
         
         const pSelect = document.getElementById('intake_product');
         pSelect.innerHTML = products.map(p => `<option value="${p.product_id}">${p.product_name}</option>`).join('');
         
-        const uSelect = document.getElementById('intake_unit');
-        uSelect.innerHTML = units.map(u => `<option value="${u.unit_size_id}">${u.size_description}</option>`).join('');
+        // Auto-load valid units for the first product in the list
+        if (products.length > 0) {
+            await loadValidUnits(products[0].product_id);
+        }
         
         document.getElementById('intakeModal').style.display = 'block';
         document.getElementById('modalOverlay').style.display = 'block';
     } catch (e) {
         alert('Error loading medicines list.');
+    }
+}
+
+// Listen for product changes to dynamically load matching units
+document.getElementById('intake_product').addEventListener('change', async function() {
+    await loadValidUnits(this.value);
+});
+
+async function loadValidUnits(productId) {
+    try {
+        const unitRes = await fetch('api/get_metadata.php?type=product_units&product_id=' + productId);
+        const units = await unitRes.json();
+        
+        const uSelect = document.getElementById('intake_unit');
+        if (units.length === 0) {
+            uSelect.innerHTML = '<option value="">(No valid units configured)</option>';
+        } else {
+            uSelect.innerHTML = units.map(u => `<option value="${u.unit_size_id}">${u.size_description}</option>`).join('');
+        }
+    } catch (e) {
+        console.error('Failed to fetch valid units');
     }
 }
 

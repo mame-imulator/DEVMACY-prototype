@@ -26,6 +26,14 @@ if (!$product_id || !$unit_size_id || $new_qty <= 0 || !$expiry_date) {
 try {
     $pdo->beginTransaction();
 
+    // 0. Hardware / Logic Validation
+    // Prevent defining a batch using units that aren't registered for this specific drug
+    $stmt = $pdo->prepare("SELECT 1 FROM Product_Unit_Price WHERE product_id = ? AND unit_size_id = ?");
+    $stmt->execute([$product_id, $unit_size_id]);
+    if (!$stmt->fetch()) {
+        throw new Exception("Invalid Unit Sizing: This drug is not configured to be sold in the selected unit. Please check the master catalog.");
+    }
+
     // 1. Check if an identical batch exists (Product + Unit + Expiry)
     $stmt = $pdo->prepare("SELECT stock_id, quantity FROM Stock WHERE product_id = ? AND unit_size_id = ? AND expiry_date = ?");
     $stmt->execute([$product_id, $unit_size_id, $expiry_date]);

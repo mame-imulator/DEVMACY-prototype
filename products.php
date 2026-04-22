@@ -36,11 +36,24 @@ if (file_exists('xcrud/xcrud.php')) {
     if ($view === 'units') {
         $x_units = Xcrud::get_instance();
         $x_units->table('Unit_Size');
-        $x_units->table_name('Packaging & Unit Definitions');
-        $x_units->label('size_description', 'Packaging Type');
+        $x_units->table_name('Allowed Units Definition');
+        $x_units->label('size_description', 'Unit Name / Packaging Type');
         $x_units->unset_print();
         $x_units->unset_csv();
         $xcrud_html = $x_units->render();
+    } elseif ($view === 'pricing') {
+        $x_pup = Xcrud::get_instance();
+        $x_pup->table('Product_Unit_Price');
+        $x_pup->table_name('Medicine Unit Mappings & Pricing');
+        $x_pup->relation('product_id', 'Product', 'product_id', 'product_name');
+        $x_pup->relation('unit_size_id', 'Unit_Size', 'unit_size_id', 'size_description');
+        $x_pup->label('product_id', 'Medicine');
+        $x_pup->label('unit_size_id', 'Allowed Unit');
+        $x_pup->label('price_per_unit', 'Price ($)');
+        $x_pup->label('barcode', 'Barcode Identifier');
+        $x_pup->unset_print();
+        $x_pup->unset_csv();
+        $xcrud_html = $x_pup->render();
     } else {
         $x_prod = Xcrud::get_instance();
         $x_prod->table('Product');
@@ -154,11 +167,14 @@ if (file_exists('xcrud/xcrud.php')) {
         </div>
 
         <div class="tabs">
-            <a href="products.php?view=medicines" class="tab <?= ($view !== 'units') ? 'active' : '' ?>">
+            <a href="products.php?view=medicines" class="tab <?= ($view === 'medicines') ? 'active' : '' ?>">
                 <i class="ph ph-pill"></i> Medicine Catalog
             </a>
+            <a href="products.php?view=pricing" class="tab <?= ($view === 'pricing') ? 'active' : '' ?>">
+                <i class="ph ph-tag"></i> Unit Mappings & Pricing
+            </a>
             <a href="products.php?view=units" class="tab <?= ($view === 'units') ? 'active' : '' ?>">
-                <i class="ph ph-package"></i> Unit Definitions
+                <i class="ph ph-package"></i> Allowed Units
             </a>
         </div>
 

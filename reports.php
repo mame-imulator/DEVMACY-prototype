@@ -6,6 +6,13 @@ include 'includes/header.php';
 $view = $_GET['view'] ?? 'sales';
 $xcrud_html = '';
 
+// Custom callback to prevent xCRUD from truncating long strings
+if (!function_exists('format_multi_line_items')) {
+    function format_multi_line_items($value, $fieldname, $primary_key, $row, $xcrud) {
+        return $value; 
+    }
+}
+
 if (file_exists('xcrud/xcrud.php')) {
     require_once ('xcrud/xcrud.php');
     $xcrud = Xcrud::get_instance();
@@ -52,12 +59,15 @@ if (file_exists('xcrud/xcrud.php')) {
         $xcrud->table('Sale');
         $xcrud->table_name('Order History');
         
-        // Separate Subselects for better readability
-        $xcrud->subselect('Items Sold', 'SELECT GROUP_CONCAT(CONCAT(p.product_name, " x ", si.units_sold) SEPARATOR ", ") FROM Sale_Item si JOIN Product p ON si.product_id = p.product_id WHERE si.sale_id = {sale_id}');
+        // Separate Subselects for better readability - Using <br> to separate items
+        $xcrud->subselect('Items Sold', 'SELECT GROUP_CONCAT(CONCAT(p.product_name, " x ", si.units_sold, " @ $", si.unit_price) SEPARATOR "<br>") FROM Sale_Item si JOIN Product p ON si.product_id = p.product_id WHERE si.sale_id = {sale_id}');
         $xcrud->subselect('Total ($)', 'SELECT SUM(si.unit_price * si.units_sold) FROM Sale_Item si WHERE si.sale_id = {sale_id}');
         
         $xcrud->columns('sale_id, sale_date, Items Sold, Total ($), status');
         $xcrud->label('sale_id', 'Order #');
+        
+        // Use a callback to bypass xCRUD's automatic string trimming completely
+        $xcrud->column_callback('Items Sold', 'format_multi_line_items');
         
         // Note: xCRUD sum() on subselects can be complex depending on version, 
         // if it doesn't show, we'd need a real column in the DB.

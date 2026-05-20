@@ -79,6 +79,27 @@ if (isset($pdo) && $pdo) {
         ");
         $sales_trend_data = $trend_stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Yearly Sales Trend (Monthly Breakdown)
+        $yearly_trend_stmt = $pdo->query("
+            SELECT DATE_FORMAT(s.sale_date, '%b') as month, SUM(si.unit_price * si.units_sold) as total 
+            FROM Sale s 
+            LEFT JOIN Sale_Item si ON s.sale_id = si.sale_id 
+            WHERE YEAR(s.sale_date) = YEAR(CURDATE())
+            GROUP BY MONTH(s.sale_date)
+            ORDER BY MONTH(s.sale_date) ASC
+        ");
+        $yearly_sales_trend_data = $yearly_trend_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $months_list = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $yearly_totals = array_fill_keys($months_list, 0.00);
+        foreach($yearly_sales_trend_data as $row) {
+            $m = $row['month'];
+            if (isset($yearly_totals[$m])) {
+                $yearly_totals[$m] = (float)$row['total'];
+            }
+        }
+
+
         // Top 5 Products
         $top_stmt = $pdo->query("
             SELECT p.product_name, SUM(si.units_sold) as sold 
@@ -274,8 +295,11 @@ if (isset($pdo) && $pdo) {
         <!-- Sales Trend Chart -->
         <div class="glass-panel" style="padding: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 style="font-size: 18px;">Sales Performance (7 Days)</h3>
-                <i class="ph ph-chart-line" style="color: var(--text-muted); font-size: 20px;"></i>
+                <h3 id="chartTitle" style="font-size: 18px; margin: 0;">Sales Performance (7 Days)</h3>
+                <div class="chart-toggles" style="display: flex; background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); gap: 4px;">
+                    <button id="btn7Days" class="chart-toggle-btn active" style="background: var(--primary-color); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">7 Days</button>
+                    <button id="btnYearly" class="chart-toggle-btn" style="background: transparent; border: none; color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Yearly</button>
+                </div>
             </div>
             <canvas id="salesTrendChart" style="max-height: 280px;"></canvas>
         </div>
@@ -426,18 +450,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     <?php
         $days = []; $totals = [];
-        foreach($sales_trend_data as $d) { $days[] = $d['day']; $totals[] = (float)$d['total']; }
+        if (isset($sales_trend_data)) {
+            foreach($sales_trend_data as $d) { $days[] = $d['day']; $totals[] = (float)$d['total']; }
+        }
         // Pad with empty data if needed
         if(count($days) < 2) { $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; $totals = [0,0,0,0,0,0,0]; }
     ?>
 
-    new Chart(ctx, {
+    const dayLabels = <?= json_encode($days) ?>;
+    const dayData = <?= json_encode($totals) ?>;
+    const yearLabels = <?= json_encode(isset($yearly_totals) ? array_keys($yearly_totals) : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']) ?>;
+    const yearData = <?= json_encode(isset($yearly_totals) ? array_values($yearly_totals) : array_fill(0, 12, 0)) ?>;
+
+    const salesChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: <?= json_encode($days) ?>,
+            labels: dayLabels,
             datasets: [{
                 label: 'Sales ($)',
-                data: <?= json_encode($totals) ?>,
+                data: dayData,
                 borderColor: '#6366f1',
                 backgroundColor: 'rgba(99, 102, 241, 0.1)',
                 borderWidth: 3,
@@ -459,6 +490,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+    });
+
+    const btn7Days = document.getElementById('btn7Days');
+    const btnYearly = document.getElementById('btnYearly');
+    const chartTitle = document.getElementById('chartTitle');
+
+    btn7Days.addEventListener('click', () => {
+        btn7Days.classList.add('active');
+        btn7Days.style.background = 'var(--primary-color)';
+        btn7Days.style.color = 'white';
+        
+        btnYearly.classList.remove('active');
+        btnYearly.style.background = 'transparent';
+        btnYearly.style.color = 'var(--text-muted)';
+        
+        chartTitle.textContent = 'Sales Performance (7 Days)';
+        
+        salesChart.data.labels = dayLabels;
+        salesChart.data.datasets[0].data = dayData;
+        salesChart.data.datasets[0].label = 'Sales ($)';
+        salesChart.data.datasets[0].borderColor = '#6366f1';
+        salesChart.data.datasets[0].backgroundColor = 'rgba(99, 102, 241, 0.1)';
+        salesChart.data.datasets[0].pointBackgroundColor = '#6366f1';
+        salesChart.update();
+    });
+
+    btnYearly.addEventListener('click', () => {
+        btnYearly.classList.add('active');
+        btnYearly.style.background = 'var(--primary-color)';
+        btnYearly.style.color = 'white';
+        
+        btn7Days.classList.remove('active');
+        btn7Days.style.background = 'transparent';
+        btn7Days.style.color = 'var(--text-muted)';
+        
+        chartTitle.textContent = 'Sales Performance (Yearly)';
+        
+        salesChart.data.labels = yearLabels;
+        salesChart.data.datasets[0].data = yearData;
+        salesChart.data.datasets[0].label = 'Monthly Sales ($)';
+        salesChart.data.datasets[0].borderColor = '#10B981';
+        salesChart.data.datasets[0].backgroundColor = 'rgba(16, 185, 129, 0.1)';
+        salesChart.data.datasets[0].pointBackgroundColor = '#10B981';
+        salesChart.update();
     });
 });
 </script>

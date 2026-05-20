@@ -71,7 +71,22 @@
     outline: none;
 }
 
-#aiSuggestionsList { flex: 1; overflow-y: auto; padding-right: 5px; }
+#analyzeSection {
+    flex: 1; 
+    overflow-y: auto; 
+    padding-right: 5px; 
+}
+#diagSection {
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+#diagResults {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+}
 
 .suggestion-card {
     background: rgba(255, 255, 255, 0.04);
@@ -166,7 +181,7 @@ function switchAITab(mode, el) {
     el.classList.add('active');
     
     document.getElementById('analyzeSection').style.display = (mode === 'analyze' ? 'block' : 'none');
-    document.getElementById('diagSection').style.display = (mode === 'diag' ? 'block' : 'none');
+    document.getElementById('diagSection').style.display = (mode === 'diag' ? 'flex' : 'none');
     
     if(mode === 'analyze') analyzeCart();
 }

@@ -101,6 +101,46 @@ if (isset($pdo) && $pdo) {
         ");
         $recent_sales = $recent_stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Top Revenue Products
+        $rev_stmt = $pdo->query("
+            SELECT p.product_name, SUM(si.unit_price * si.units_sold) as revenue 
+            FROM Sale_Item si 
+            JOIN Product p ON si.product_id = p.product_id 
+            GROUP BY p.product_id 
+            ORDER BY revenue DESC 
+            LIMIT 5
+        ");
+        $top_revenue_products = $rev_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Top Symptoms Treated (Customer Behavior)
+        $sym_stmt = $pdo->query("
+            SELECT sym.symptom_name, SUM(si.units_sold) as units 
+            FROM Sale_Item si
+            JOIN Product_Symptom ps ON si.product_id = ps.product_id
+            JOIN Symptom sym ON ps.symptom_id = sym.symptom_id
+            GROUP BY sym.symptom_id
+            ORDER BY units DESC
+            LIMIT 5
+        ");
+        $top_symptoms = $sym_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Promotion Performance
+        $promo_performance = [];
+        try {
+            $promo_stmt = $pdo->query("
+                SELECT pr.promo_name, SUM(si.units_sold) as promo_units, SUM(si.unit_price * si.units_sold) as promo_revenue
+                FROM Promotion pr
+                JOIN Product_Unit_Price pup ON pr.barcode = pup.barcode
+                JOIN Sale_Item si ON pup.product_id = si.product_id AND pup.unit_size_id = si.unit_size_id
+                JOIN Sale s ON si.sale_id = s.sale_id
+                WHERE s.sale_date BETWEEN pr.start_date AND pr.end_date
+                GROUP BY pr.promo_id
+                ORDER BY promo_revenue DESC
+                LIMIT 5
+            ");
+            $promo_performance = $promo_stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(Exception $e) {}
+
     } catch(PDOException $e) {
         $db_error = $e->getMessage();
     }
@@ -252,6 +292,78 @@ if (isset($pdo) && $pdo) {
                                 <span style="font-size: 14px;"><?= htmlspecialchars($p['product_name']) ?></span>
                             </div>
                             <span style="font-weight: 700; color: var(--secondary-color); font-size: 14px;"><?= $p['sold'] ?> sold</span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Analytics Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; margin-bottom: 32px;">
+        <!-- Top Revenue Products -->
+        <div class="glass-panel" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="font-size: 18px;">Top Revenue Products</h3>
+                <i class="ph ph-money" style="color: #10B981; font-size: 20px;"></i>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <?php if(empty($top_revenue_products)): ?>
+                    <p style="color: var(--text-muted); font-size: 14px;">No sales data available.</p>
+                <?php else: ?>
+                    <?php foreach($top_revenue_products as $idx => $p): ?>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 12px; font-weight: 800; color: var(--text-muted); width: 20px;"><?= $idx + 1 ?></span>
+                                <span style="font-size: 14px;"><?= htmlspecialchars($p['product_name']) ?></span>
+                            </div>
+                            <span style="font-weight: 700; color: #10B981; font-size: 14px;">$<?= number_format($p['revenue'], 2) ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Customer Behavior (Symptoms) -->
+        <div class="glass-panel" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="font-size: 18px;">Top Symptoms Treated</h3>
+                <i class="ph ph-users" style="color: #6366f1; font-size: 20px;"></i>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <?php if(empty($top_symptoms)): ?>
+                    <p style="color: var(--text-muted); font-size: 14px;">No symptom data available.</p>
+                <?php else: ?>
+                    <?php foreach($top_symptoms as $idx => $s): ?>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 12px; font-weight: 800; color: var(--text-muted); width: 20px;"><?= $idx + 1 ?></span>
+                                <span style="font-size: 14px;"><?= htmlspecialchars($s['symptom_name']) ?></span>
+                            </div>
+                            <span style="font-weight: 700; color: var(--secondary-color); font-size: 14px;"><?= $s['units'] ?> units</span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Promotion Performance -->
+        <div class="glass-panel" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="font-size: 18px;">Promo Performance</h3>
+                <i class="ph ph-tag" style="color: #F59E0B; font-size: 20px;"></i>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <?php if(empty($promo_performance)): ?>
+                    <p style="color: var(--text-muted); font-size: 14px;">No active promo data available.</p>
+                <?php else: ?>
+                    <?php foreach($promo_performance as $idx => $pr): ?>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 12px; font-weight: 800; color: var(--text-muted); width: 20px;"><?= $idx + 1 ?></span>
+                                <span style="font-size: 14px;"><?= htmlspecialchars($pr['promo_name']) ?></span>
+                            </div>
+                            <span style="font-weight: 700; color: #10B981; font-size: 14px;">$<?= number_format($pr['promo_revenue'], 2) ?></span>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>

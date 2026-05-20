@@ -206,27 +206,42 @@ async function runDiagnostic() {
     }
 
     setTimeout(async () => {
-        if (foundSymptomIds.length === 0) {
-            results.innerHTML = `
-                <div style="padding:20px; text-align:center;">
-                    <p style="color:var(--text-muted); margin-bottom:12px;">I couldn't identify specific symptoms in your description.</p>
-                    <p style="font-size:12px; color:rgba(255,255,255,0.4)">Try these keywords: <b>${symptomMaster.slice(0,5).map(sm => sm.symptom_name).join(', ')}</b></p>
-                </div>`;
-            status.innerText = "Clinical AI Standing By";
-            return;
-        }
-
         try {
-            const response = await fetch(`api/get_recommendations.php?symptoms=${foundSymptomIds.join(',')}`);
-            const data = await response.json();
+            // First get Gemini Response
+            const geminiReq = await fetch('api/ask_gemini.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            });
+            const geminiData = await geminiReq.json();
+            const geminiText = geminiData.response || geminiData.error || "No response";
+
+            // Then get recommendations if we found symptoms
+            let recData = [];
+            if (foundSymptomIds.length > 0) {
+                const response = await fetch(`api/get_recommendations.php?symptoms=${foundSymptomIds.join(',')}`);
+                recData = await response.json();
+            }
             
             status.innerText = "Diagnosis Complete";
             
-            if (data.length === 0) {
-                results.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted)">No matching medications in stock for detected symptoms.</div>`;
+            let html = `
+                <div style="background: rgba(99, 102, 241, 0.1); padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; line-height: 1.5; color: #e2e8f0; border-left: 3px solid var(--primary-color);">
+                    <strong>Gemini Analysis:</strong><br/>
+                    ${geminiText.replace(/\n/g, '<br/>')}
+                </div>
+            `;
+
+            if (foundSymptomIds.length === 0) {
+                 html += `
+                <div style="padding:10px; text-align:center;">
+                    <p style="color:var(--text-muted); margin-bottom:12px;">No specific symptoms mapped to local products.</p>
+                </div>`;
+            } else if (recData.length === 0) {
+                html += `<div style="padding:10px; text-align:center; color:var(--text-muted)">No matching medications in stock for detected symptoms.</div>`;
             } else {
-                let html = `<p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">BASED ON SYMPTOMS: <b>${foundSymptomIds.length} Detected</b></p>`;
-                data.forEach(item => {
+                html += `<p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">BASED ON SYMPTOMS: <b>${foundSymptomIds.length} Detected</b></p>`;
+                recData.forEach(item => {
                     html += `
                     <div class="suggestion-card">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -238,12 +253,13 @@ async function runDiagnostic() {
                         </div>
                     </div>`;
                 });
-                results.innerHTML = html;
             }
+            results.innerHTML = html;
         } catch (e) {
-            results.innerHTML = "Error fetching recommendations.";
+            console.error(e);
+            results.innerHTML = "Error during analysis.";
         }
-    }, 1200);
+    }, 200);
 }
 
 function quickAddFromAI(item) {

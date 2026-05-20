@@ -43,8 +43,8 @@ $page_title = $page_title ?? 'DEVMACY - Pharmacy POS';
             <h2 class="gradient-text"><?= htmlspecialchars($page_title) ?></h2>
             <div class="user-profile">
                 <!-- Username from Session -->
-                <span>Hi, Admin</span> 
-                <div class="avatar">AD</div>
+                <span>Hi, <?= htmlspecialchars($_SESSION['role_name'] ?? 'User') ?></span> 
+                <div class="avatar"><?= htmlspecialchars(substr($_SESSION['role_name'] ?? 'U', 0, 2)) ?></div>
             </div>
         </header>
     <?php endif; ?>

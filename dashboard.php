@@ -6,6 +6,9 @@ include 'includes/header.php';
 $today_sales = 0.00;
 $today_txns = 0;
 $low_stock = 0;
+$week_sales = 0.00;
+$year_sales = 0.00;
+$items_sold_today = 0;
 
 if (isset($pdo) && $pdo) {
 if (isset($pdo) && $pdo) {
@@ -14,6 +17,21 @@ if (isset($pdo) && $pdo) {
         $stmt = $pdo->query("SELECT SUM(si.unit_price * si.units_sold) as total FROM Sale_Item si JOIN Sale s ON si.sale_id = s.sale_id WHERE s.sale_date = CURDATE()");
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
         if($res && $res['total']) $today_sales = $res['total'];
+
+        // This Week's Sales
+        $stmt = $pdo->query("SELECT SUM(si.unit_price * si.units_sold) as total FROM Sale_Item si JOIN Sale s ON si.sale_id = s.sale_id WHERE YEARWEEK(s.sale_date, 1) = YEARWEEK(CURDATE(), 1)");
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        if($res && $res['total']) $week_sales = $res['total'];
+
+        // This Year's Sales
+        $stmt = $pdo->query("SELECT SUM(si.unit_price * si.units_sold) as total FROM Sale_Item si JOIN Sale s ON si.sale_id = s.sale_id WHERE YEAR(s.sale_date) = YEAR(CURDATE())");
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        if($res && $res['total']) $year_sales = $res['total'];
+
+        // Items Sold Today
+        $stmt = $pdo->query("SELECT SUM(si.units_sold) as cnt FROM Sale_Item si JOIN Sale s ON si.sale_id = s.sale_id WHERE s.sale_date = CURDATE()");
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        if($res && $res['cnt']) $items_sold_today = $res['cnt'];
 
         // Transactions count
         $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM Sale WHERE sale_date = CURDATE()");
@@ -123,29 +141,54 @@ if (isset($pdo) && $pdo) {
         }
     ?>
 
+    <?php $aov = $today_txns > 0 ? $today_sales / $today_txns : 0; ?>
     <!-- Metrics Row -->
-    <div class="metrics-grid" style="margin-bottom: 32px; grid-template-columns: repeat(3, 1fr);">
+    <div class="metrics-grid" style="margin-bottom: 32px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
         <div class="metric-card glass-panel">
-            <div class="metric-icon"><i class="ph ph-receipt"></i></div>
+            <div class="metric-icon" style="color: #10B981;"><i class="ph ph-currency-dollar"></i></div>
             <div>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 4px;">Today's Sales</p>
-                <h3 style="font-size: 24px;">$<?= number_format($today_sales, 2) ?></h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">Today's Sales</p>
+                <h3 style="font-size: 22px;">$<?= number_format($today_sales, 2) ?></h3>
+            </div>
+        </div>
+
+        <div class="metric-card glass-panel">
+            <div class="metric-icon" style="color: #6366f1;"><i class="ph ph-calendar-blank"></i></div>
+            <div>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">This Week</p>
+                <h3 style="font-size: 22px;">$<?= number_format($week_sales, 2) ?></h3>
+            </div>
+        </div>
+
+        <div class="metric-card glass-panel">
+            <div class="metric-icon" style="color: #F59E0B;"><i class="ph ph-calendar-check"></i></div>
+            <div>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">This Year</p>
+                <h3 style="font-size: 22px;">$<?= number_format($year_sales, 2) ?></h3>
+            </div>
+        </div>
+
+        <div class="metric-card glass-panel">
+            <div class="metric-icon" style="color: #8B5CF6;"><i class="ph ph-shopping-cart"></i></div>
+            <div>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">Avg Order Value</p>
+                <h3 style="font-size: 22px;">$<?= number_format($aov, 2) ?></h3>
+            </div>
+        </div>
+
+        <div class="metric-card glass-panel success">
+            <div class="metric-icon"><i class="ph ph-trend-up"></i></div>
+            <div>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">Transactions</p>
+                <h3 style="font-size: 22px;"><?= $today_txns ?></h3>
             </div>
         </div>
 
         <div class="metric-card glass-panel">
             <div class="metric-icon" style="color: var(--accent-color);"><i class="ph ph-arrow-u-up-left"></i></div>
             <div>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 4px;">Recent Returns</p>
-                <h3 style="font-size: 24px;"><?= $ret_count ?> Items</h3>
-            </div>
-        </div>
-        
-        <div class="metric-card glass-panel success">
-            <div class="metric-icon"><i class="ph ph-trend-up"></i></div>
-            <div>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 4px;">Transactions</p>
-                <h3 style="font-size: 24px;"><?= $today_txns ?></h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">Recent Returns</p>
+                <h3 style="font-size: 22px;"><?= $ret_count ?> Items</h3>
             </div>
         </div>
     </div>

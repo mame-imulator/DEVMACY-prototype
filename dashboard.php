@@ -226,13 +226,13 @@ if (isset($pdo) && $pdo) {
             </div>
         </div>
 
-        <div class="metric-card glass-panel">
+        <a href="reports.php?view=yearly_sales" class="metric-card glass-panel" style="text-decoration: none; color: inherit;">
             <div class="metric-icon" style="color: #F59E0B;"><i class="ph ph-calendar-check"></i></div>
             <div>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">This Year</p>
                 <h3 style="font-size: 22px;">$<?= number_format($year_sales, 2) ?></h3>
             </div>
-        </div>
+        </a>
 
         <div class="metric-card glass-panel">
             <div class="metric-icon" style="color: #8B5CF6;"><i class="ph ph-shopping-cart"></i></div>

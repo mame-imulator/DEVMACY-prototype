@@ -292,7 +292,12 @@ async function updateRecommendations() {
             const card = `
                 <div class="glass-panel recommendation-card">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                        <h4 style="margin:0;">${item.product_name}</h4>
+                        <div>
+                            <h4 style="margin:0;">${item.product_name}</h4>
+                            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace; display: block; margin-top: 2px;">
+                                [ID: #${item.product_id} | Barcode: ${item.barcode}]
+                            </span>
+                        </div>
                         <span class="stock-badge ${stockClass}">${stockLevel} in stock</span>
                     </div>
                     <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">

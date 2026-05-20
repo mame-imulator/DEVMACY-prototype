@@ -19,7 +19,7 @@ if (strlen($q) < 1) {
 try {
     // Search by barcode, product name, OR product_id
     // Now with Multi-Inventory support (Front vs Back)
-    $stmt = $pdo->prepare("SELECT pup.barcode, p.product_name, us.size_description, pup.price_per_unit,
+    $stmt = $pdo->prepare("SELECT pup.barcode, p.product_id, p.product_name, us.size_description, pup.price_per_unit,
                                   pr.discount_type, pr.discount_value, pr.promo_name,
                                   (SELECT SUM(quantity) FROM Stock WHERE product_id = p.product_id AND unit_size_id = us.unit_size_id AND location = 'Front') as front_qty,
                                   (SELECT SUM(quantity) FROM Stock WHERE product_id = p.product_id AND unit_size_id = us.unit_size_id AND location = 'Back') as back_qty
@@ -60,6 +60,7 @@ try {
 
         $results[] = [
             'barcode' => $row['barcode'],
+            'product_id' => $row['product_id'],
             'product_name' => $row['product_name'],
             'size_description' => $row['size_description'],
             'original_price' => $original_price,

@@ -132,7 +132,12 @@ async function searchProducts(query) {
             html += `
             <div class="search-item" onclick="addToCartByIndex(${index})" style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <div style="font-weight: 700; color: white;">${p.product_name} ${badgeHtml}</div>
+                    <div>
+                        <div style="font-weight: 700; color: white;">${p.product_name} ${badgeHtml}</div>
+                        <div style="font-size: 10px; color: var(--text-muted); font-family: monospace; margin-top: 2px;">
+                            [ID: #${p.product_id} | Barcode: ${p.barcode}]
+                        </div>
+                    </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 4px;">
                     <div>

@@ -52,6 +52,7 @@ CREATE TABLE Stock (
     product_id INT NOT NULL,
     unit_size_id INT NOT NULL,
     quantity INT NOT NULL CHECK (quantity >= 0),
+    location ENUM('Front', 'Back') NOT NULL DEFAULT 'Back',
     expiry_date DATE NOT NULL,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
                  ON UPDATE CURRENT_TIMESTAMP,
@@ -209,4 +210,11 @@ SET @stock2 = LAST_INSERT_ID();
 INSERT INTO Stock_Movement (stock_id, user_id, type, quantity_change, balance_after, reason) VALUES 
 (@stock1, 1, 'Purchase', 50, 50, 'Initial Opening Balance'),
 (@stock2, 1, 'Purchase', 100, 100, 'Initial Opening Balance');
+
+-- ==========================================
+-- MIGRATIONS / UPDATES
+-- ==========================================
+-- To add Multi-Inventory support to an existing database, run:
+-- ALTER TABLE Stock ADD COLUMN location ENUM('Front', 'Back') NOT NULL DEFAULT 'Back';
+-- UPDATE Stock SET location = 'Back';
 

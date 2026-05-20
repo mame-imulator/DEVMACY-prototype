@@ -109,7 +109,8 @@ async function searchProducts(query) {
     }
 
     try {
-        const response = await fetch(`api/search_products.php?q=${encodeURIComponent(query)}`);
+        const timestamp = new Date().getTime();
+        const response = await fetch(`api/search_products.php?q=${encodeURIComponent(query)}&_t=${timestamp}`);
         currentSearchResults = await response.json();
         
         if (currentSearchResults.length === 0) {
@@ -134,7 +135,13 @@ async function searchProducts(query) {
                     <div style="font-weight: 700; color: white;">${p.product_name} ${badgeHtml}</div>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-                    <span>${p.size_description}</span>
+                    <div>
+                        <span>${p.size_description}</span>
+                        <div style="font-size: 11px; margin-top: 4px;">
+                            <span style="color: ${p.front_qty > 0 ? 'var(--secondary-color)' : 'var(--accent-color)'}; font-weight: 700;">SHOP: ${p.front_qty}</span> | 
+                            <span style="opacity: 0.6;">STOREROOM: ${p.back_qty}</span>
+                        </div>
+                    </div>
                     <div>${priceHtml}</div>
                 </div>
             </div>`;

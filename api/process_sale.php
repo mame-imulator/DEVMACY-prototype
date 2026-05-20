@@ -63,17 +63,18 @@ try {
             $unit_price = round($unit_price, 2);
         }
 
-        // 3. FIFO Stock Deduction (Closest to Expiry First)
-        // Fetch all stock batches for this product/unit, ordered by expiry date
+        // 3. FIFO Stock Deduction (FRONT SHOP ONLY)
+        // Fetch all stock batches in the 'Front' location, ordered by expiry date
         $stmt = $pdo->prepare("SELECT stock_id, quantity FROM Stock 
                                WHERE product_id = ? AND unit_size_id = ? AND quantity > 0 
+                               AND location = 'Front'
                                ORDER BY expiry_date ASC");
         $stmt->execute([$product_id, $unit_size_id]);
         $batches = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $total_available = array_sum(array_column($batches, 'quantity'));
         if ($total_available < $qty_to_sell) {
-            throw new Exception("Insufficient stock for product barcode: $barcode");
+            throw new Exception("Insufficient stock in Front Shop for: $barcode. Please restock from Back Storeroom.");
         }
 
         // 4. Create Sale_Item Entry

@@ -33,10 +33,11 @@ if (file_exists('xcrud/xcrud.php')) {
     $xcrud->relation('product_id','Product','product_id','product_name');
     $xcrud->relation('unit_size_id','Unit_Size','unit_size_id','size_description');
     
-    $xcrud->columns('product_id, unit_size_id, quantity, expiry_date');
+    $xcrud->columns('product_id, unit_size_id, quantity, location, expiry_date');
     $xcrud->label('product_id', 'Medicine');
     $xcrud->label('unit_size_id', 'Unit');
     $xcrud->label('quantity', 'Current Stock');
+    $xcrud->label('location', 'Location');
     
     // Formatting: Use slashes for date
     $xcrud->change_type('expiry_date', 'date', '', array('format' => 'd/m/Y'));
@@ -71,6 +72,18 @@ if (file_exists('xcrud/xcrud.php')) {
         $xcrud->button('#', 'Return to Supplier', 'ph ph-arrow-square-out', '', array(
             'onclick' => 'returnToSupplier({stock_id}, {quantity})',
             'style' => 'color: #94A3B8;'
+        ));
+        
+        // Transfer Buttons
+        $xcrud->button('#', 'Move to Front', 'ph ph-arrow-fat-line-right', '', array(
+            'onclick' => 'moveStock({stock_id}, {quantity}, "Back", "Front")',
+            'style' => 'color: var(--primary-color);',
+            'data-show-where' => '{location} == "Back"' // xCRUD pseudo-logic if supported, else we handle in JS
+        ));
+        $xcrud->button('#', 'Move to Back', 'ph ph-arrow-fat-line-left', '', array(
+            'onclick' => 'moveStock({stock_id}, {quantity}, "Front", "Back")',
+            'style' => 'color: #64748B;',
+            'data-show-where' => '{location} == "Front"'
         ));
     }
 
@@ -197,26 +210,43 @@ if (file_exists('xcrud/xcrud.php')) {
 
 <script>
 async function openIntakeModal() {
-    // Fetch Products & Units for dropdowns
     try {
-        const [prodRes, unitRes] = await Promise.all([
-            fetch('api/get_metadata.php?type=product_list'), 
-            fetch('api/get_metadata.php?type=unit_size')
-        ]);
-        
+        const prodRes = await fetch('api/get_metadata.php?type=product_list');
         const products = await prodRes.json();
-        const units = await unitRes.json();
         
         const pSelect = document.getElementById('intake_product');
         pSelect.innerHTML = products.map(p => `<option value="${p.product_id}">${p.product_name}</option>`).join('');
         
-        const uSelect = document.getElementById('intake_unit');
-        uSelect.innerHTML = units.map(u => `<option value="${u.unit_size_id}">${u.size_description}</option>`).join('');
+        // Auto-load valid units for the first product in the list
+        if (products.length > 0) {
+            await loadValidUnits(products[0].product_id);
+        }
         
         document.getElementById('intakeModal').style.display = 'block';
         document.getElementById('modalOverlay').style.display = 'block';
     } catch (e) {
         alert('Error loading medicines list.');
+    }
+}
+
+// Listen for product changes to dynamically load matching units
+document.getElementById('intake_product').addEventListener('change', async function() {
+    await loadValidUnits(this.value);
+});
+
+async function loadValidUnits(productId) {
+    try {
+        const unitRes = await fetch('api/get_metadata.php?type=product_units&product_id=' + productId);
+        const units = await unitRes.json();
+        
+        const uSelect = document.getElementById('intake_unit');
+        if (units.length === 0) {
+            uSelect.innerHTML = '<option value="">(No valid units configured)</option>';
+        } else {
+            uSelect.innerHTML = units.map(u => `<option value="${u.unit_size_id}">${u.size_description}</option>`).join('');
+        }
+    } catch (e) {
+        console.error('Failed to fetch valid units');
     }
 }
 
@@ -332,6 +362,38 @@ async function performAdjustment(stockId, newQty, reason) {
         }
     } catch (e) {
         alert('Failed to connect to adjustment API.');
+    }
+}
+
+async function moveStock(stockId, currentQty, fromMode, toMode) {
+    const qty = prompt(`Enter number of units to move from ${fromMode} to ${toMode} (Available: ${currentQty}):`, currentQty);
+    if (qty === null || qty === "" || isNaN(qty) || parseInt(qty) <= 0) return;
+    
+    if (parseInt(qty) > parseInt(currentQty)) {
+        alert(`Cannot move more than what is available in ${fromMode}.`);
+        return;
+    }
+
+    try {
+        const response = await fetch('api/transfer_stock.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                stock_id: stockId,
+                quantity: parseInt(qty),
+                target_location: toMode
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert(result.message);
+            location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Failed to connect to transfer API.');
     }
 }
 </script>

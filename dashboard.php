@@ -101,23 +101,27 @@ if (isset($pdo) && $pdo) {
         ");
         $recent_sales = $recent_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Top Revenue Products
+        // Top Revenue Products (This Week)
         $rev_stmt = $pdo->query("
             SELECT p.product_name, SUM(si.unit_price * si.units_sold) as revenue 
             FROM Sale_Item si 
             JOIN Product p ON si.product_id = p.product_id 
+            JOIN Sale s ON si.sale_id = s.sale_id
+            WHERE YEARWEEK(s.sale_date, 1) = YEARWEEK(CURDATE(), 1)
             GROUP BY p.product_id 
             ORDER BY revenue DESC 
             LIMIT 5
         ");
         $top_revenue_products = $rev_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Top Symptoms Treated (Customer Behavior)
+        // Top Symptoms Treated (This Week)
         $sym_stmt = $pdo->query("
             SELECT sym.symptom_name, SUM(si.units_sold) as units 
             FROM Sale_Item si
             JOIN Product_Symptom ps ON si.product_id = ps.product_id
             JOIN Symptom sym ON ps.symptom_id = sym.symptom_id
+            JOIN Sale s ON si.sale_id = s.sale_id
+            WHERE YEARWEEK(s.sale_date, 1) = YEARWEEK(CURDATE(), 1)
             GROUP BY sym.symptom_id
             ORDER BY units DESC
             LIMIT 5
@@ -128,7 +132,8 @@ if (isset($pdo) && $pdo) {
         $promo_performance = [];
         try {
             $promo_stmt = $pdo->query("
-                SELECT pr.promo_name, SUM(si.units_sold) as promo_units, SUM(si.unit_price * si.units_sold) as promo_revenue
+                SELECT pr.promo_name, SUM(si.units_sold) as promo_units, SUM(si.unit_price * si.units_sold) as promo_revenue,
+                       DATEDIFF(pr.end_date, pr.start_date) as duration_days
                 FROM Promotion pr
                 JOIN Product_Unit_Price pup ON pr.barcode = pup.barcode
                 JOIN Sale_Item si ON pup.product_id = si.product_id AND pup.unit_size_id = si.unit_size_id
@@ -304,7 +309,7 @@ if (isset($pdo) && $pdo) {
         <!-- Top Revenue Products -->
         <div class="glass-panel" style="padding: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 style="font-size: 18px;">Top Revenue Products</h3>
+                <h3 style="font-size: 18px;">Top Revenue Products <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">(This Week)</span></h3>
                 <i class="ph ph-money" style="color: #10B981; font-size: 20px;"></i>
             </div>
             <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -327,7 +332,7 @@ if (isset($pdo) && $pdo) {
         <!-- Customer Behavior (Symptoms) -->
         <div class="glass-panel" style="padding: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 style="font-size: 18px;">Top Symptoms Treated</h3>
+                <h3 style="font-size: 18px;">Top Symptoms Treated <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">(This Week)</span></h3>
                 <i class="ph ph-users" style="color: #6366f1; font-size: 20px;"></i>
             </div>
             <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -361,7 +366,10 @@ if (isset($pdo) && $pdo) {
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <span style="font-size: 12px; font-weight: 800; color: var(--text-muted); width: 20px;"><?= $idx + 1 ?></span>
-                                <span style="font-size: 14px;"><?= htmlspecialchars($pr['promo_name']) ?></span>
+                                <div>
+                                    <span style="font-size: 14px; display: block;"><?= htmlspecialchars($pr['promo_name']) ?></span>
+                                    <span style="font-size: 11px; color: var(--text-muted);"><?= $pr['duration_days'] ?> Days</span>
+                                </div>
                             </div>
                             <span style="font-weight: 700; color: #10B981; font-size: 14px;">$<?= number_format($pr['promo_revenue'], 2) ?></span>
                         </div>

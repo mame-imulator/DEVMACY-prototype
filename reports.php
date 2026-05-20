@@ -116,6 +116,15 @@ if (file_exists('xcrud/xcrud.php')) {
 .tabs { display: flex; gap: 12px; margin-bottom: 24px; }
 .tab { padding: 12px 24px; border-radius: 12px; background: var(--surface-light); color: var(--text-muted); text-decoration: none; font-weight: 600; transition: all 0.2s; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; }
 .tab.active { background: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: var(--shadow-glow); }
+
+/* Highlight the Sum Row (Σ) */
+.xcrud-wrapper table tr.xcrud-sum-row td,
+.xcrud-wrapper table tfoot tr td {
+    background-color: rgba(99, 102, 241, 0.15) !important;
+    color: white !important;
+    font-weight: 800 !important;
+    border-top: 2px solid white !important;
+}
 </style>
 
 <div class="page-container">

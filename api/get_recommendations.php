@@ -27,13 +27,17 @@ try {
             SUM(st.quantity) as total_stock,
             MIN(st.expiry_date) as earliest_expiry
         FROM Product p
-        JOIN Product_Symptom ps ON p.product_id = ps.product_id
         JOIN Unit_Size s ON 1=1 -- We want all available sizes for this drug
         JOIN Product_Unit_Price pup ON p.product_id = pup.product_id AND s.unit_size_id = pup.unit_size_id
         LEFT JOIN Stock st ON p.product_id = st.product_id AND s.unit_size_id = st.unit_size_id
-        WHERE ps.symptom_id IN ($placeholders)
+        WHERE p.product_id IN (
+            SELECT ps.product_id
+            FROM Product_Symptom ps
+            WHERE ps.symptom_id IN ($placeholders)
+            GROUP BY ps.product_id
+            HAVING COUNT(DISTINCT ps.symptom_id) = ?
+        )
         GROUP BY p.product_id, s.unit_size_id
-        HAVING COUNT(DISTINCT ps.symptom_id) = ?
         ORDER BY total_stock DESC, p.product_name ASC
     ";
 

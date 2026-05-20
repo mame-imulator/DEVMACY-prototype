@@ -12,18 +12,10 @@ if ($curr_role !== 'Admin' && $curr_role !== 'Pharmacist') {
 
 // 1. Calculate Item Catalog Metrics for HUD
 $total_items = 0;
-$priced_items = 0;
-$clinical_items = 0;
 
 if (isset($pdo)) {
     // Total Unique Medicines
     $total_items = $pdo->query("SELECT COUNT(*) FROM Product")->fetchColumn();
-    
-    // Items with at least one Price Record
-    $priced_items = $pdo->query("SELECT COUNT(DISTINCT product_id) FROM Product_Unit_Price")->fetchColumn();
-    
-    // Items with Clinical Symptom Data
-    $clinical_items = $pdo->query("SELECT COUNT(DISTINCT product_id) FROM Product_Symptom")->fetchColumn();
 }
 
 
@@ -124,7 +116,7 @@ if (file_exists('xcrud/xcrud.php')) {
 <div class="page-container">
     
     <!-- Item Health HUD -->
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 320px)); gap: 24px; margin-bottom: 32px;">
         <div class="glass-panel" style="padding: 20px; display: flex; align-items: center; gap: 16px; border-left: 4px solid var(--primary-color);">
             <div style="background: rgba(99, 102, 241, 0.1); padding: 12px; border-radius: 12px; color: var(--primary-color);">
                 <i class="ph ph-pill" style="font-size: 24px;"></i>
@@ -132,26 +124,6 @@ if (file_exists('xcrud/xcrud.php')) {
             <div>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">Total Items</p>
                 <h3 style="font-size: 20px; font-weight: 800;"><?= $total_items ?> Medicines</h3>
-            </div>
-        </div>
-
-        <div class="glass-panel" style="padding: 20px; display: flex; align-items: center; gap: 16px; border-left: 4px solid var(--secondary-color);">
-            <div style="background: rgba(16, 185, 129, 0.1); padding: 12px; border-radius: 12px; color: var(--secondary-color);">
-                <i class="ph ph-barcode" style="font-size: 24px;"></i>
-            </div>
-            <div>
-                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">Pricing Coverage</p>
-                <h3 style="font-size: 20px; font-weight: 800;"><?= ($total_items > 0) ? round(($priced_items/$total_items)*100) : 0 ?>% Logged</h3>
-            </div>
-        </div>
-
-        <div class="glass-panel" style="padding: 20px; display: flex; align-items: center; gap: 16px; border-left: 4px solid var(--accent-color);">
-            <div style="background: rgba(244, 63, 94, 0.1); padding: 12px; border-radius: 12px; color: var(--accent-color);">
-                <i class="ph ph-book-open" style="font-size: 24px;"></i>
-            </div>
-            <div>
-                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 4px;">Clinical Index</p>
-                <h3 style="font-size: 20px; font-weight: 800;"><?= ($total_items > 0) ? round(($clinical_items/$total_items)*100) : 0 ?>% Data</h3>
             </div>
         </div>
     </div>

@@ -1,3 +1,3 @@
-Hosted at: www.soft-express.co.th/devmacy
+Hosted at: www.hottrash.in.th/devmacy
 
 This is the prototype version.
